@@ -48,8 +48,28 @@ Seguiremos los principios REST para establecer una arquitectura tradicional de n
 Con RestControllerAdvice garantizamos el manejo centralizado de excepciones desde un solo punto. Opcionalmente un controller advice puede manejar las excepciones de toda la aplicación
 o crear uno por cada RestController.
 
-GlobalControllerAdvice
+### GlobalControllerAdvice
 ```java
+package com.videogames.exception;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.Map;
+
+@RestControllerAdvice
+public class GlobalControllerAdvice {
+
+    @ExceptionHandler(VideogameNotFoundException.class)
+    ResponseEntity<Map<String, String>> videogameNotFoundHandler(VideogameNotFoundException ex){
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", ex.getMessage()));
+    }
+}
+
 ```
 
 <br>
@@ -58,16 +78,127 @@ Desde la capa de Servicio implementaremos la lógica de la aplicación para el c
 Un punto importante a considerar es que solo manejara excepciones no verificadas (unchecked). Por lo que excepciones verificadas por el compilador requeriran de un manejo adicional
 de try-catch para hacer un rethrow, arrojando excepciones personalizadas o Runtime Exceptions para su manejo desde el Controller Advice.
 
-Service
+### Service
 ```java
+package com.videogames.service;
+
+import com.videogames.exception.VideogameNotFoundException;
+import com.videogames.model.Videogame;
+import com.videogames.repository.VideogameRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class VideogameService {
+    private final VideogameRepository videogameRepository;
+
+    public VideogameService(VideogameRepository videogameRepository){
+        this.videogameRepository = videogameRepository;
+    }
+
+    public List<Videogame> findAll(){
+
+        return videogameRepository.findAll();
+    }
+
+    public Videogame findById(Long id){
+
+        return videogameRepository.findById(id)
+                .orElseThrow(() -> new VideogameNotFoundException(id));
+    }
+
+    public List<Videogame> findByNamePattern(String name){
+
+        return videogameRepository.findByNameContains(name);
+    }
+
+    public Videogame save(Videogame videogame){
+        return videogameRepository.save(videogame);
+    }
+
+    public Videogame update(Videogame newVideogame, Long id){
+
+        return videogameRepository.findById(id)
+                .map(videogame -> {
+                    videogame.setName(newVideogame.getName());
+                    videogame.setPlatform(newVideogame.getPlatform());
+                    videogame.setPrice(newVideogame.getPrice());
+
+                    return videogameRepository.save(videogame);
+                })
+                .orElseGet(() -> {
+                    return videogameRepository.save(newVideogame);
+                });
+    }
+
+    public void delete(Long videogameId){
+        if(videogameRepository.findById(videogameId).isEmpty()){
+            throw new VideogameNotFoundException(videogameId);
+        }
+
+        videogameRepository.deleteById(videogameId);
+    }
+}
+
 ```
 
 <br>
 
 Creamos un archivo de configuración para poblar inicialmente la base de datos
 
-DatabaseConfig
+### DatabaseConfig
 ```java
+package com.videogames.config;
+
+import com.videogames.model.Videogame;
+import com.videogames.repository.VideogameRepository;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+@RequiredArgsConstructor
+public class DatabaseConfig {
+
+    private static final Logger log = LoggerFactory.getLogger(DatabaseConfig.class);
+    private final VideogameRepository videogameRepository;
+
+    @Bean
+    CommandLineRunner initDatabase(){
+        return args ->{
+            Videogame halo = Videogame.builder()
+                    .name("Halo Reach")
+                    .platform("Xbox 360")
+                    .price(899.0)
+                    .releaseDate("14/09/2010")
+                    .build();
+
+            Videogame ninjaGaiden = Videogame.builder()
+                    .name("Ninja Gaiden 2")
+                    .platform("Xbox 360")
+                    .price(799.0)
+                    .releaseDate("03/05/2080")
+                    .build();
+
+            Videogame assassins = Videogame.builder()
+                    .name("Assassin's Creed 2")
+                    .platform("Xbox 360")
+                    .price(859.0)
+                    .releaseDate("17/11/2009")
+                    .build();
+
+            log.info("Preloading: " + videogameRepository.save(halo));
+            log.info("Preloading: " + videogameRepository.save(ninjaGaiden));
+            log.info("Preloading: " + videogameRepository.save(assassins));
+        };
+    }
+}
+
 ```
 
 ## Pruebas
@@ -78,36 +209,36 @@ Ahora pondremos a prueba los endpoints creados (capa de controladores) y verific
 
 Obtener todos los registros
 
-![get all videogames image]()
+![get all videogames image](https://github.com/CristopherLodbrok117/global-exception-handler/blob/7a8a0738c69aefe82c21f557602ccd5641d36146/screenshots/00%20-%20getAll.png)
 
 <br>
 
 Obtener un registro por su ID
 
-![get video game by id image]()
+![get video game by id image](https://github.com/CristopherLodbrok117/global-exception-handler/blob/77a0b4d2d14a9b4ca1d8aa07ed456b6486423d6b/screenshots/01%20-%20getOne.png)
 
 <br>
 
 Crear un uevo registro
 
-![create new videogame image]()
+![create new videogame image](https://github.com/CristopherLodbrok117/global-exception-handler/blob/77a0b4d2d14a9b4ca1d8aa07ed456b6486423d6b/screenshots/03%20-%20create.png)
 
 <br>
 
 Actualizamos información
 
-![update video game image]()
+![update video game image](https://github.com/CristopherLodbrok117/global-exception-handler/blob/77a0b4d2d14a9b4ca1d8aa07ed456b6486423d6b/screenshots/04%20-%20update.png)
 
 <br>
 
 Eliminar registro por ID
 
-![delete videogame by ID image]()
+![delete videogame by ID image](https://github.com/CristopherLodbrok117/global-exception-handler/blob/77a0b4d2d14a9b4ca1d8aa07ed456b6486423d6b/screenshots/05%20-%20delete.png)
 
 <br>
 
 Generar excepción solicitando un registro inexistente (aplica para GET y DELETE mientras que UPDATE en esta implementación crea un nuevo registro si no existe)
 
-![trigger error image]()
+![trigger error image](https://github.com/CristopherLodbrok117/global-exception-handler/blob/77a0b4d2d14a9b4ca1d8aa07ed456b6486423d6b/screenshots/06%20-%20exceptionHandler.png)
 
 
