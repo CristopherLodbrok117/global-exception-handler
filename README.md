@@ -21,3 +21,80 @@ Por otro lado, *@RestControllerAdvice* combina las anotaciones *@ControllerAdvic
 La ventaja de incluir *@ResponseBody*  es que el valor de retorno de un método será directamente inyectado al response body, sin necesidad de utilizar ResponseEntity<T> (o HttpEntity<T>). A pesar que podemos utilizar tanto una como otra anotación, *@RestControllerAdvice* es más adecuada para API REST.
 <br><br>
 Desde la documentación oficial podemos ver mas detalles de la anotación: [Annotation Interface RestControllerAdvice](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/RestControllerAdvice.html) 
+
+
+## Creación de la API
+
+<br>
+
+Dependencias:
+- Spring Web
+- Spring Data JPA 
+- MySQL Driver
+- Lombok
+
+Seguiremos los principios REST para establecer una arquitectura tradicional de nuestros componentes:
+- Entidades/modelo
+- Repositorios
+- Servicios
+- Controladores
+- Excepciones
+- Configuración (las clases anotadas con @Configuration son fuentes de beans para la aplicación)
+
+## Manejo de excepciones
+
+<br>
+
+Con RestControllerAdvice garantizamos el manejo centralizado de excepciones desde un solo punto. Opcionalmente un controller advice puede manejar las excepciones de toda la aplicación
+o crear uno por cada RestController.
+
+GlobalControllerAdvice
+```java
+```
+
+
+Desde la capa de Servicio implementaremos la lógica de la aplicación para el cumplimiento de la lógica de negocio. Es aquí donde controlaremos las excepciones que se arrojan.
+Un punto importante a considerar es que solo manejara excepciones no verificadas (unchecked). Por lo que excepciones verificadas por el compilador requeriran de un manejo adicional
+de try-catch para hacer un rethrow, arrojando excepciones personalizadas o Runtime Exceptions para su manejo desde el Controller Advice.
+
+Service
+```java
+```
+
+Creamos un archivo de configuración para poblar inicialmente la base de datos
+
+DatabaseConfig
+```java
+```
+
+## Pruebas
+
+Ahora pondremos a prueba los endpoints creados (capa de controladores) y verificar que la respuesta que obtenemos sea la esperada.
+
+<br>
+
+Obtener todos los registros
+
+![get all videogames image]()
+
+Obtener un registro por su ID
+
+![get video game by id image]()
+
+Crear un uevo registro
+
+![create new videogame image]()
+
+Actualizamos información
+
+![update video game image]()
+
+Eliminar registro por ID
+
+![delete videogame by ID image]()
+
+Generar excepción solicitando un registro inexistente (aplica para GET y DELETE mientras que UPDATE en esta implementación crea un nuevo registro si no existe)
+
+![trigger error image]()
+
+
