@@ -52,6 +52,7 @@ GlobalControllerAdvice
 ```java
 ```
 
+<br>
 
 Desde la capa de Servicio implementaremos la lógica de la aplicación para el cumplimiento de la lógica de negocio. Es aquí donde controlaremos las excepciones que se arrojan.
 Un punto importante a considerar es que solo manejara excepciones no verificadas (unchecked). Por lo que excepciones verificadas por el compilador requeriran de un manejo adicional
@@ -60,6 +61,8 @@ de try-catch para hacer un rethrow, arrojando excepciones personalizadas o Runti
 Service
 ```java
 ```
+
+<br>
 
 Creamos un archivo de configuración para poblar inicialmente la base de datos
 
@@ -77,21 +80,31 @@ Obtener todos los registros
 
 ![get all videogames image]()
 
+<br>
+
 Obtener un registro por su ID
 
 ![get video game by id image]()
+
+<br>
 
 Crear un uevo registro
 
 ![create new videogame image]()
 
+<br>
+
 Actualizamos información
 
 ![update video game image]()
 
+<br>
+
 Eliminar registro por ID
 
 ![delete videogame by ID image]()
+
+<br>
 
 Generar excepción solicitando un registro inexistente (aplica para GET y DELETE mientras que UPDATE en esta implementación crea un nuevo registro si no existe)
 
